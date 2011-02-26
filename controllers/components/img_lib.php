@@ -15,12 +15,38 @@ class ImgLibComponent extends Object {
 
     function init($fileName)
     {
+        $this->log("opening image: $fileName", "debug");
         // *** Open up the file
         $this->image = $this->openImage($fileName);
 
         // *** Get width and height
         $this->width  = imagesx($this->image);
         $this->height = imagesy($this->image);
+    }
+
+    function get_image($source, $width, $height, $option) {
+        $this->init($source);
+
+        $dimensions = $this->getDimensions($width, $height, $option);
+        $dir_length  = strrpos($source, "/") + 1;
+        $dest_dir = substr($source, 0, $dir_length);
+        $filename = substr($source, $dir_length, strlen($source));
+        $new_width = intval($dimensions["optimalWidth"]);
+        $new_height = intval($dimensions["optimalHeight"]);
+        $resized_filename = "${new_width}x${new_height}-$filename";
+        $dest_filename = "$dest_dir$resized_filename";
+
+        if (!file_exists($dest_filename)) {
+            $this->resizeImage($width, $height, $option);
+
+            $this->log("resizing $source as $dest_filename", "debug"); 
+            $this->saveImage($dest_filename);
+        } else {
+            $this->log("using the cached $dest_filename", "debug");
+        }
+
+        return array("filename" => $resized_filename, "absolute_filename" => $dest_filename,
+                "height" => $new_height, "width" => $new_width);
     }
 
     ## --------------------------------------------------------
@@ -69,6 +95,8 @@ class ImgLibComponent extends Object {
         if ($option == 'crop') {
             $this->crop($optimalWidth, $optimalHeight, $newWidth, $newHeight);
         }
+
+        return $optionArray;
     }
 
     ## --------------------------------------------------------
@@ -117,6 +145,8 @@ class ImgLibComponent extends Object {
     {
         $ratio = $this->height / $this->width;
         $newHeight = $newWidth * $ratio;
+
+        $this->log("new height: $newWidth * $ratio", "debug");        
         return $newHeight;
     }
 
