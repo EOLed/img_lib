@@ -264,4 +264,27 @@ class ImgLibComponent extends Object {
         imagedestroy($this->imageResized);
     }
 
+    function get_doc_root($root = null) {
+        $doc_root = $this->remove_trailing_slash(env('DOCUMENT_ROOT'));
+
+        if ($root != null) {
+            $root = $this->remove_trailing_slash($root);
+            $doc_root .=  $root;
+        }
+
+        return $doc_root;
+    }
+
+    /**
+     * Removes the trailing slash from the string specified.
+     * @param $string the string to remove the trailing slash from.
+     */
+    function remove_trailing_slash($string) {
+        $string_length = strlen($string);
+        if (strrpos($string, "/") === $string_length - 1) {
+            $string = substr($string, 0, $string_length - 1);
+        }
+
+        return $string;
+    }
 }
