@@ -1,4 +1,5 @@
 <?php
+App::import("Model", "ImgLib.CachedImage");
 class ImgLibComponent extends Object {
     var $controller;
 
@@ -25,24 +26,52 @@ class ImgLibComponent extends Object {
     }
 
     function get_image($source, $width, $height, $option) {
-        $this->init($source);
+        $this->controller->loadModel("CachedImage");
+        $image = array();
 
-        $dimensions = $this->getDimensions($width, $height, $option);
-        $dir_length  = strrpos($source, "/") + 1;
-        $dest_dir = substr($source, 0, $dir_length);
-        $filename = substr($source, $dir_length, strlen($source));
-        $new_width = intval($dimensions["optimalWidth"]);
-        $new_height = intval($dimensions["optimalHeight"]);
-        $resized_filename = "${new_width}x${new_height}-$filename";
-        $dest_filename = "$dest_dir$resized_filename";
+        $cached_image = $this->controller->CachedImage->find("first",
+                array("conditions" => array("CachedImage.filename" => $source,
+                                            "CachedImage.width" => $width,
+                                            "CachedImage.height" => $height,
+                                            "CachedImage.option" => $option)));
 
-        if (!file_exists($dest_filename)) {
-            $this->resizeImage($width, $height, $option);
-
-            $this->log("resizing $source as $dest_filename", "debug"); 
-            $this->saveImage($dest_filename);
+        if ($cached_image && file_exists($cached_image["CachedImage"]["absolute_filename"])) {
+            $resized_filename = $cached_image["CachedImage"]["resized_filename"];
+            $dest_filename = $cached_image["CachedImage"]["absolute_filename"];
+            $new_height = $cached_image["CachedImage"]["resized_height"];
+            $new_width = $cached_image["CachedImage"]["resized_width"];
         } else {
-            $this->log("using the cached $dest_filename", "debug");
+            $this->init($source);
+
+            $dimensions = $this->getDimensions($width, $height, $option);
+            $dir_length  = strrpos($source, "/") + 1;
+            $dest_dir = substr($source, 0, $dir_length);
+            $filename = substr($source, $dir_length, strlen($source));
+            $new_width = intval($dimensions["optimalWidth"]);
+            $new_height = intval($dimensions["optimalHeight"]);
+            $resized_filename = "${new_width}x${new_height}-$filename";
+            $dest_filename = "$dest_dir$resized_filename";
+
+            $cached_image = array();
+            $cached_image["CachedImage"]["filename"] = $source;
+            $cached_image["CachedImage"]["width"] = $width;
+            $cached_image["CachedImage"]["height"] = $height;
+            $cached_image["CachedImage"]["option"] = $option;
+            $cached_image["CachedImage"]["resized_filename"] = $resized_filename;
+            $cached_image["CachedImage"]["absolute_filename"] = $dest_filename;
+            $cached_image["CachedImage"]["resized_height"] = $new_height;
+            $cached_image["CachedImage"]["resized_width"] = $new_width;
+            $this->controller->CachedImage->create();
+            $this->controller->CachedImage->save($cached_image);
+
+            if (!file_exists($dest_filename)) {
+                $this->resizeImage($width, $height, $option);
+
+                $this->log("resizing $source as $dest_filename", "debug"); 
+                $this->saveImage($dest_filename);
+            } else {
+                $this->log("using the cached $dest_filename", "debug");
+            }
         }
 
         return array("filename" => $resized_filename, "absolute_filename" => $dest_filename,
