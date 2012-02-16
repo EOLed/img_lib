@@ -1,6 +1,6 @@
 <?php
 App::import("Model", "ImgLib.CachedImage");
-class ImgLibComponent extends Object {
+class ImgLibComponent extends Component {
     var $controller;
 
     // *** Class variables
