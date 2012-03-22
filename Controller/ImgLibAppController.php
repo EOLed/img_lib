@@ -1,5 +1,5 @@
 <?php
-App::import("Component", "Urg.Urg");
+App::uses("UrgComponent", "Urg.Controller/Component");
 class ImgLibAppController extends AppController {
     var $components = array(
            "Auth" => array(
@@ -9,7 +9,7 @@ class ImgLibAppController extends AppController {
                            "action" => "login",
                            "admin" => false
                    )
-           ), "Urg"
+           ), "Urg.Urg"
     );
 
     function beforeFilter() {
