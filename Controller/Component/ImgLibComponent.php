@@ -9,7 +9,7 @@ class ImgLibComponent extends Component {
     private $height;
     private $imageResized;
 
-    function initialize(&$controller, $settings = array()) {
+    function initialize(&$controller) {
         $this->controller =& $controller;
     }
 
@@ -20,13 +20,17 @@ class ImgLibComponent extends Component {
         // *** Open up the file
         $this->image = $this->openImage($fileName);
 
+        $this->log("getting width of image", LOG_DEBUG);
+
         // *** Get width and height
         $this->width  = imagesx($this->image);
         $this->height = imagesy($this->image);
+
+        $this->log("end init", LOG_DEBUG);
     }
 
     function get_image($source, $width, $height, $option) {
-        $this->controller->loadModel("CachedImage");
+        $this->controller->loadModel("ImgLib.CachedImage");
         $image = array();
 
         $cached_image = $this->controller->CachedImage->find("first",
@@ -36,6 +40,7 @@ class ImgLibComponent extends Component {
                                             "CachedImage.option" => $option)));
 
         if ($cached_image && file_exists($cached_image["CachedImage"]["absolute_filename"])) {
+            CakeLog::write(LOG_DEBUG, "using exisitng cached image: " . Debugger::exportVar($cached_image, 3));
             $resized_filename = $cached_image["CachedImage"]["resized_filename"];
             $dest_filename = $cached_image["CachedImage"]["absolute_filename"];
             $new_height = $cached_image["CachedImage"]["resized_height"];
@@ -84,17 +89,21 @@ class ImgLibComponent extends Component {
     {
         // *** Get extension
         $extension = strtolower(strrchr($file, '.'));
+        $size = getimagesize($file);
 
-        switch($extension)
+        switch($size["mime"])
         {
-            case '.jpg':
-            case '.jpeg':
+            case 'image/jpeg':
+                CakeLog::write(LOG_DEBUG, "creating image from jpeg: '$file'");
+                ini_set('display_errors','on');
+                  error_reporting(E_ALL);
                 $img = @imagecreatefromjpeg($file);
+                CakeLog::write(LOG_DEBUG, "created image from jpeg");
                 break;
-            case '.gif':
+            case 'image/gif':
                 $img = @imagecreatefromgif($file);
                 break;
-            case '.png':
+            case 'image/png':
                 $img = @imagecreatefrompng($file);
                 break;
             default:
@@ -158,7 +167,12 @@ class ImgLibComponent extends Component {
                 $optimalHeight = $optionArray['optimalHeight'];
                 break;
         }
-        return array('optimalWidth' => $optimalWidth, 'optimalHeight' => $optimalHeight);
+
+        $dim = array('optimalWidth' => $optimalWidth, 'optimalHeight' => $optimalHeight);
+
+        CakeLog::write(LOG_DEBUG, "optimal dimensions: " . Debugger::exportVar($dim, 3));
+
+        return $dim;
     }
 
     ## --------------------------------------------------------
