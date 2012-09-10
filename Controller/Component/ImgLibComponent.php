@@ -9,8 +9,8 @@ class ImgLibComponent extends Component {
     private $height;
     private $imageResized;
 
-    function initialize(&$controller) {
-        $this->controller =& $controller;
+    function initialize(Controller $controller) {
+        $this->controller = $controller;
     }
 
 
